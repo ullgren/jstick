@@ -3,6 +3,7 @@ package net.jstick;
 import java.util.ArrayList;
 
 import net.jstick.api.Controller;
+import net.jstick.api.RawDeviceEvent;
 import net.jstick.api.Tellstick;
 
 public class Snoop {
@@ -26,7 +27,7 @@ public class Snoop {
 			 System.out.println("ID: " + c.getId() +  "\tName: " + c.getName() + "\tType: " + c.getTypeString() + "\tSerial: "  + c.getSerial() + "\n");
 		 }
 
-		ts.listenRaw();
+		RawDeviceEvent rde = ts.listenRaw();
 			
 		// Do not exit, keep listening
 		while (true) {

@@ -21,9 +21,10 @@ import com.sun.jna.Pointer;
 
 
 public class Tellstick {
-	private static String version = "1.1";
+	private static String version = "1.4";
 	static Log log = LogFactory.getLog(Tellstick.class.getName());
 	boolean debug = false;
+	RawDeviceEvent rde;
 	int methods = 	TellstickLibrary.INSTANCE.TELLSTICK_TURNON |
 					TellstickLibrary.INSTANCE.TELLSTICK_TURNOFF |
 					TellstickLibrary.INSTANCE.TELLSTICK_BELL |
@@ -590,33 +591,19 @@ public class Tellstick {
 	}
 	
 	public void listenRaw(long time){		
-		TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
-			
-		
-			public void apply(String data, int controllerId, int callbackId, Pointer context) {				
-				System.out.println(controllerId + " " + data);
-			}
-		};
-		
+		RawDeviceEvent rde = new RawDeviceEvent();			
 		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
-		
+	
 		try{
 			Thread.sleep(time);
 		}catch (Exception e){}
 	}
 	
-	public void listenRaw(){		
-		TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
-			
-		
-			public void apply(String data, int controllerId, int callbackId, Pointer context) {	
-				DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
-			    System.out.println(df.format(Calendar.getInstance().getTime()) + "\tCtrl:" + controllerId + "\tData: " + data);
-				//System.out.println(controllerId + " " + data);
-			}
-		};
-		
+	// We need to keep the returned RawDeviceEvent "live" to avoid GC that will stop the callback
+	public RawDeviceEvent listenRaw(){
+		RawDeviceEvent rde = new RawDeviceEvent();			
 		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
+		return rde;
 	}
 	
 	public void listenDeviceEvents(long time){		

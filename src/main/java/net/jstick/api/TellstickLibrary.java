@@ -83,8 +83,10 @@ public interface TellstickLibrary extends Library {
 		void apply(int deviceId, int changeEvent, int changeType, int callbackId, Pointer context);
 	};
 	
+
 	public interface TDRawDeviceEvent extends Callback {
-		void apply(String data, int controllerId, int callbackId, Pointer context);
+		void apply(Pointer data, int controllerId, int callbackId, Pointer context);
+		//void apply(String data, int controllerId, int callbackId, Pointer context);
 	};
 	
 	public interface TDSensorEvent extends Callback {
