@@ -702,21 +702,16 @@ public class Tellstick {
 	}
 	
 	@Deprecated
-	public void listenRaw(long time){		
-		TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
-			public void apply(Pointer data, int controllerId, int callbackId, Pointer context) {				
-				log.info(controllerId + " " + data.getShort(0));
-			}
-		};
-		
-//		int callbackId = 
-		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
+	public void listenRaw(long time){			
+		/// int callbackId = 
+		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(new RawDeviceEvent(), null);
 		try{
 			Thread.sleep(time);
 		}catch (Exception e){}
 	}
 	
-	// We need to keep the returned RawDeviceEvent "live" to avoid GC that will stop the callback
+	// We need to keep the returned RawDeviceEvent "live" to avoid a GC that will stop the callback
+	// so keep a ref to the returned object
 	@Deprecated
 	public RawDeviceEvent listenRaw(){
 		RawDeviceEvent rde = new RawDeviceEvent();			
