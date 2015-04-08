@@ -24,7 +24,6 @@ public class Tellstick {
 	private static String version = "1.4";
 	static Log log = LogFactory.getLog(Tellstick.class.getName());
 	boolean debug = false;
-	RawDeviceEvent rde;
 	int methods = 	TellstickLibrary.INSTANCE.TELLSTICK_TURNON |
 					TellstickLibrary.INSTANCE.TELLSTICK_TURNOFF |
 					TellstickLibrary.INSTANCE.TELLSTICK_BELL |
@@ -590,16 +589,15 @@ public class Tellstick {
 		return TellstickLibrary.INSTANCE.tdRemoveDevice(id);
 	}
 	
-	public void listenRaw(long time){		
-		RawDeviceEvent rde = new RawDeviceEvent();			
-		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
-	
+	public void listenRaw(long time){			
+		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(new RawDeviceEvent(), null);
 		try{
 			Thread.sleep(time);
 		}catch (Exception e){}
 	}
 	
-	// We need to keep the returned RawDeviceEvent "live" to avoid GC that will stop the callback
+	// We need to keep the returned RawDeviceEvent "live" to avoid a GC that will stop the callback
+	// so keep a ref to the returned object
 	public RawDeviceEvent listenRaw(){
 		RawDeviceEvent rde = new RawDeviceEvent();			
 		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
