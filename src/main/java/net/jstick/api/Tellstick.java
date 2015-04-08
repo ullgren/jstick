@@ -34,6 +34,7 @@ public class Tellstick {
 	
 	private List<RawEventListner> rawEventListners;
 	private Integer rawEventCallbackId;
+
 	private TellstickLibrary.TDRawDeviceEvent rawDeviceEvent;
 	
 	private List<DeviceEventListner> deviceEventListners;
@@ -90,8 +91,7 @@ public class Tellstick {
 		synchronized (this.rawEventListners) {
 			this.rawEventListners.add(eventListner);
 			// If the callback is not registered lets register it
-			if ( this.rawEventCallbackId == null ) {
-				
+			if ( this.rawEventCallbackId == null ) {				
 				this.rawEventCallbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(this.rawDeviceEvent, null); 
 			}
 		}
@@ -140,7 +140,6 @@ public class Tellstick {
 			this.deviceChangeEventListners.add(eventListner);
 			// If the callback is not registered lets register it
 			if ( this.deviceChangeEventCallbackId == null ) {
-				
 				this.deviceChangeEventCallbackId = 
 						TellstickLibrary.INSTANCE.tdRegisterDeviceChangeEvent(this.deviceChangeEvent, null); 
 			}
