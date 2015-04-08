@@ -24,25 +24,34 @@ public class Tellstick {
 	private static String version = "1.1";
 	static Log log = LogFactory.getLog(Tellstick.class.getName());
 	boolean debug = false;
-	int methods = 	TellstickLibrary.INSTANCE.TELLSTICK_TURNON |
-					TellstickLibrary.INSTANCE.TELLSTICK_TURNOFF |
-					TellstickLibrary.INSTANCE.TELLSTICK_BELL |
-					TellstickLibrary.INSTANCE.TELLSTICK_TOGGLE |
-					TellstickLibrary.INSTANCE.TELLSTICK_DIM |
-					TellstickLibrary.INSTANCE.TELLSTICK_EXECUTE |
-					TellstickLibrary.INSTANCE.TELLSTICK_UP |
-					TellstickLibrary.INSTANCE.TELLSTICK_DOWN |
-					TellstickLibrary.INSTANCE.TELLSTICK_STOP;
+	int methods = 	TellstickLibrary.TELLSTICK_TURNON |
+					TellstickLibrary.TELLSTICK_TURNOFF |
+					TellstickLibrary.TELLSTICK_BELL |
+					TellstickLibrary.TELLSTICK_TOGGLE |
+					TellstickLibrary.TELLSTICK_DIM |
+					TellstickLibrary.TELLSTICK_EXECUTE |
+					TellstickLibrary.TELLSTICK_UP |
+					TellstickLibrary.TELLSTICK_DOWN |
+					TellstickLibrary.TELLSTICK_STOP;
 	
-
-				
-	/**
+	private List<RawEventListner> rawEventListners;
+	private Integer rawEventCallbackId;
+	
+	private List<DeviceEventListner> deviceEventListners;
+	private Integer deviceEventCallbackId;
+	
+	private List<DeviceChangeEventListner> deviceChangeEventListners;
+	private Integer deviceChangeEventCallbackId;
+	
+	private List<SensorEventListner>  sensorEventListners;
+	private Integer sensorEventCallbackId;
+	
+		/**
 	 * Constructor calls init() on creation to open up communication
 	 * 
 	 */
 	public Tellstick() {
-		super();
-		init();
+		this(false);
 	}
 
 	/**
@@ -52,14 +61,19 @@ public class Tellstick {
 	 */
 	public Tellstick(boolean debug) {
 		super();
+		this.rawEventListners = new ArrayList<RawEventListner>();
+		this.deviceEventListners = new ArrayList<DeviceEventListner>();
+		this.deviceChangeEventListners = new ArrayList<DeviceChangeEventListner>();
+		this.sensorEventListners = new ArrayList<SensorEventListner>();
 		this.debug = debug;
 		init();
 	}
 
 	// Setup communication
 	public void init(){
-		if(debug)
-		System.setProperty("jna.debug_load", "true");
+		if(debug) {
+			System.setProperty("jna.debug_load", "true");
+		}
 		TellstickLibrary.INSTANCE.tdInit();
 	}
 	
@@ -69,11 +83,167 @@ public class Tellstick {
 	}
 	
 	
+	public void addRawEventListners(RawEventListner eventListner) {
+		synchronized (this.rawEventListners) {
+			this.rawEventListners.add(eventListner);
+			// If the callback is not registered lets register it
+			if ( this.rawEventCallbackId == null ) {
+				TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
+					
+					public void apply(String data, int controllerId, int callbackId, Pointer context) {
+						RawEvent event = new RawEvent(data, controllerId);
+						synchronized (rawEventListners) {
+							for( RawEventListner listner : rawEventListners) {
+								listner.eventRecived(event);
+							}
+						}
+					}
+				};
+				this.rawEventCallbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null); 
+			}
+		}
+	}
+	
+	public void removeRawEventListners(RawEventListner eventListner) throws TellstickException {
+		synchronized (this.rawEventListners) {
+			this.rawEventListners.remove(eventListner);
+			if ( this.rawEventListners.isEmpty() && this.rawEventCallbackId != null) {
+				int result = TellstickLibrary.INSTANCE.tdUnregisterCallback(this.rawEventCallbackId);
+				if ( result != TellstickLibrary.TELLSTICK_SUCCESS) {
+					Pointer errorMessage = TellstickLibrary.INSTANCE.tdGetErrorString(result);
+					throw new TellstickException(result, errorMessage.getString(0));
+				}
+				this.rawEventCallbackId = null;
+			}
+		}
+	}
+	
+	public void addDeviceEventListners(DeviceEventListner eventListner) {
+		synchronized (this.deviceEventListners) {
+			this.deviceEventListners.add(eventListner);
+			// If the callback is not registered lets register it
+			if ( this.deviceEventCallbackId == null ) {
+				TellstickLibrary.TDDeviceEvent de = new TellstickLibrary.TDDeviceEvent() {
+					
+					@Override
+					public void apply(int deviceId, int method, String data, int callbackId,
+							Pointer context) {
+						DeviceEvent event = new DeviceEvent(deviceId, method, data);
+						synchronized (deviceEventListners) {
+							for( DeviceEventListner listner : deviceEventListners) {
+								listner.eventRecived(event);
+							}
+						}
+						
+					}
+				};
+				this.deviceEventCallbackId = TellstickLibrary.INSTANCE.tdRegisterDeviceEvent(de, null); 
+			}
+		}
+	}
+	
+	public void removeDeviceEventListners(DeviceEventListner eventListner) throws TellstickException {
+		synchronized (this.deviceEventListners) {
+			this.deviceEventListners.remove(eventListner);
+			if ( this.deviceEventListners.isEmpty() && this.deviceEventCallbackId != null) {
+				int result = TellstickLibrary.INSTANCE.tdUnregisterCallback(this.deviceEventCallbackId);
+				if ( result != TellstickLibrary.TELLSTICK_SUCCESS) {
+					Pointer errorMessage = TellstickLibrary.INSTANCE.tdGetErrorString(result);
+					throw new TellstickException(result, errorMessage.getString(0));
+				}
+				this.deviceEventCallbackId = null;
+			}
+		}
+	}
+	
+	public void addDeviceChangeEventListners(DeviceChangeEventListner eventListner) {
+		synchronized (this.deviceChangeEventListners) {
+			this.deviceChangeEventListners.add(eventListner);
+			// If the callback is not registered lets register it
+			if ( this.deviceChangeEventCallbackId == null ) {
+				TellstickLibrary.TDDeviceChangeEvent de = new TellstickLibrary.TDDeviceChangeEvent() {
+					
+					@Override
+					public void apply(int deviceId, int changeEvent,
+							int changeType, int callbackId, Pointer context) {
+						DeviceChangeEvent event = new DeviceChangeEvent(deviceId, changeEvent, changeType);
+						synchronized (deviceEventListners) {
+							for( DeviceChangeEventListner listner : deviceChangeEventListners) {
+								listner.eventRecived(event);
+							}
+						}
+						
+					}
+
+				};
+				this.deviceChangeEventCallbackId = TellstickLibrary.INSTANCE.tdRegisterDeviceChangeEvent(de, null); 
+			}
+		}
+	}
+	
+	public void removeDeviceChangeEventListners(DeviceChangeEventListner eventListner) throws TellstickException {
+		synchronized (this.deviceChangeEventListners) {
+			this.deviceChangeEventListners.remove(eventListner);
+			if ( this.deviceChangeEventListners.isEmpty() && this.deviceChangeEventCallbackId != null) {
+				int result = TellstickLibrary.INSTANCE.tdUnregisterCallback(this.deviceChangeEventCallbackId);
+				if ( result != TellstickLibrary.TELLSTICK_SUCCESS) {
+					Pointer errorMessage = TellstickLibrary.INSTANCE.tdGetErrorString(result);
+					throw new TellstickException(result, errorMessage.getString(0));
+				}
+				this.deviceChangeEventCallbackId = null;
+			}
+		}
+	}
+	
+	public void addSensorEventListners(SensorEventListner eventListner) {
+		synchronized (this.sensorEventListners) {
+			this.sensorEventListners.add(eventListner);
+			// If the callback is not registered lets register it
+			if ( this.sensorEventCallbackId == null ) {
+				TellstickLibrary.TDSensorEvent se = new TellstickLibrary.TDSensorEvent() {
+					
+					@Override
+					public void apply(Pointer protocol, Pointer model, int id, int dataType,
+							Pointer value, int timestamp, int callbackId, Pointer context) {
+						SensorEvent event = new SensorEvent(
+								protocol.getString(0), 
+								model.getString(0), 
+								id, 
+								dataType, 
+								value.getString(0), 
+								timestamp);
+						synchronized (sensorEventListners) {
+							for( SensorEventListner listner : sensorEventListners) {
+								listner.eventRecived(event);
+							}
+						}
+						
+					}
+				};	
+				this.sensorEventCallbackId = TellstickLibrary.INSTANCE.tdRegisterSensorEvent(se, null); 
+			}
+		}
+	}
+	
+	public void removeSensorEventListners(SensorEventListner eventListner) throws TellstickException {
+		synchronized (this.sensorEventListners) {
+			this.sensorEventListners.remove(eventListner);
+			if ( this.sensorEventListners.isEmpty() && this.sensorEventCallbackId != null) {
+				int result = TellstickLibrary.INSTANCE.tdUnregisterCallback(this.sensorEventCallbackId);
+				if ( result != TellstickLibrary.TELLSTICK_SUCCESS) {
+					Pointer errorMessage = TellstickLibrary.INSTANCE.tdGetErrorString(result);
+					throw new TellstickException(result, errorMessage.getString(0));
+				}
+				this.sensorEventCallbackId = null;
+			}
+		}
+	}
+	
 	public int getNumberOfDevices(){
 		return TellstickLibrary.INSTANCE.tdGetNumberOfDevices(); 
 	}
 	
-	public int getDeviceId( int i){
+	public int getDeviceId(int i){
 		return TellstickLibrary.INSTANCE.tdGetDeviceId( i ); 
 	}
 	
@@ -141,15 +311,15 @@ public class Tellstick {
 	}
 	
 	public void test(int id){	
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_TURNON));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_TURNOFF));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_BELL));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_TOGGLE));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_DIM));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_EXECUTE));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_UP));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_DOWN));
-		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.INSTANCE.TELLSTICK_STOP));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_TURNON));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_TURNOFF));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_BELL));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_TOGGLE));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_DIM));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_EXECUTE));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_UP));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_DOWN));
+		System.out.println(TellstickLibrary.INSTANCE.tdMethods(id, TellstickLibrary.TELLSTICK_STOP));
 		
 	}
 	
@@ -268,11 +438,11 @@ public class Tellstick {
 	 */
 	public String getDeviceType(int id){
 		int type = TellstickLibrary.INSTANCE.tdGetDeviceType(id);
-		if(type == TellstickLibrary.INSTANCE.TELLSTICK_TYPE_DEVICE){
+		if(type == TellstickLibrary.TELLSTICK_TYPE_DEVICE){
 			return "DEVICE";
-		} else if(type == TellstickLibrary.INSTANCE.TELLSTICK_TYPE_GROUP){
+		} else if(type == TellstickLibrary.TELLSTICK_TYPE_GROUP){
 			return "GROUP";
-		} else if(type == TellstickLibrary.INSTANCE.TELLSTICK_TYPE_SCENE){
+		} else if(type == TellstickLibrary.TELLSTICK_TYPE_SCENE){
 			return "SCENE";
 		} else {
 			return "UNKNOWN";
@@ -323,16 +493,16 @@ public class Tellstick {
 		String name = "UNSET";
 		String avail = "UNKNOWN";
 		
-		while(TellstickLibrary.INSTANCE.tdController(cid, ctype, cname, 25, cavail) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+		while(TellstickLibrary.INSTANCE.tdController(cid, ctype, cname, 25, cavail) == TellstickLibrary.TELLSTICK_SUCCESS){
 
 			byte[] value = new byte[20];
 			
-			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"serial", value, 20) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"serial", value, 20) == TellstickLibrary.TELLSTICK_SUCCESS){
 				if(Native.toString(value).length() > 0)
 					serial = Native.toString(value);
 			}
 			
-			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"firmware", value, 20) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"firmware", value, 20) == TellstickLibrary.TELLSTICK_SUCCESS){
 				if(Native.toString(value).length() > 0)
 					firmware = Native.toString(value);
 				if(firmware.equals("-1"))
@@ -369,16 +539,16 @@ public class Tellstick {
 		String name = "UNSET";
 		String avail = "UNKNOWN";
 		
-		while(TellstickLibrary.INSTANCE.tdController(cid, ctype, cname, 25, cavail) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+		while(TellstickLibrary.INSTANCE.tdController(cid, ctype, cname, 25, cavail) == TellstickLibrary.TELLSTICK_SUCCESS){
 
 			byte[] value = new byte[20];
 			
-			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"serial", value, 20) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"serial", value, 20) == TellstickLibrary.TELLSTICK_SUCCESS){
 				if(Native.toString(value).length() > 0)
 					serial = Native.toString(value);
 			}
 			
-			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"firmware", value, 20) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+			if(TellstickLibrary.INSTANCE.tdControllerValue(cid[0],"firmware", value, 20) == TellstickLibrary.TELLSTICK_SUCCESS){
 				if(Native.toString(value).length() > 0)
 					firmware = Native.toString(value);
 				if(firmware.equals("-1"))
@@ -441,7 +611,6 @@ public class Tellstick {
 	/**
 	 * list available sensors (no values)
 	 * TODO do we need this method??
-	 * @param deviceId
 	 */
 	
 	public List<BasicSensor> getSimpleSensors(){
@@ -451,7 +620,7 @@ public class Tellstick {
 		int[] dt = new int[1];
 		ArrayList<BasicSensor> sensors = new ArrayList<BasicSensor>();
 		
-		 while(TellstickLibrary.INSTANCE.tdSensor(pro, 25, mod, 25, sid, dt) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS) {
+		 while(TellstickLibrary.INSTANCE.tdSensor(pro, 25, mod, 25, sid, dt) == TellstickLibrary.TELLSTICK_SUCCESS) {
 			 BasicSensor sens = new BasicSensor(Native.toString(mod),Native.toString(pro),sid[0],dt[0]);
 			 sensors.add(sens);
 
@@ -463,7 +632,6 @@ public class Tellstick {
 	/**
 	 * Get sensor data only temp & humidity implemented atm
 	 * TODO add more sensor types
-	 * @param deviceId
 	 */
 	
 	public ArrayList<Sensor> getSensors(){
@@ -473,12 +641,12 @@ public class Tellstick {
 		int[] dt = new int[1];
 		ArrayList<Sensor> sensors = new ArrayList<Sensor>();
 		
-		 while(TellstickLibrary.INSTANCE.tdSensor(pro, 25, mod, 25, sid, dt) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS) {
+		 while(TellstickLibrary.INSTANCE.tdSensor(pro, 25, mod, 25, sid, dt) == TellstickLibrary.TELLSTICK_SUCCESS) {
 			 if(dt[0] == 1){
 				 byte[] value = new byte[10];
 				 int[] time = new int[1];
 				 double temp = -99;
-				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.INSTANCE.TELLSTICK_TEMPERATURE, value, 10, time) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.TELLSTICK_TEMPERATURE, value, 10, time) == TellstickLibrary.TELLSTICK_SUCCESS){
 					
 					 temp = Double.parseDouble(Native.toString(value));
 					 Sensor sens = new Sensor(Native.toString(mod),Native.toString(pro),sid[0],dt[0],temp,time[0]);
@@ -491,12 +659,12 @@ public class Tellstick {
 				 int[] time = new int[1];
 				 double temp = -99;
 				 int hum = -99;
-				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.INSTANCE.TELLSTICK_TEMPERATURE, value, 10, time) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.TELLSTICK_TEMPERATURE, value, 10, time) == TellstickLibrary.TELLSTICK_SUCCESS){
 					 temp = Double.parseDouble(Native.toString(value));
 					 value = null;
 				 }
 					
-				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.INSTANCE.TELLSTICK_HUMIDITY, value, 10, time) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.TELLSTICK_HUMIDITY, value, 10, time) == TellstickLibrary.TELLSTICK_SUCCESS){
 					 hum = Integer.parseInt(Native.toString(value));
 					 value=null;
 				 }
@@ -510,7 +678,7 @@ public class Tellstick {
 				 double temp = -99;
 				 int hum = -99;
 					
-				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.INSTANCE.TELLSTICK_HUMIDITY, value, 10, time) == TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS){
+				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.TELLSTICK_HUMIDITY, value, 10, time) == TellstickLibrary.TELLSTICK_SUCCESS){
 					 hum = Integer.parseInt(Native.toString(value));
 					 value=null;
 				 }
@@ -577,7 +745,7 @@ public class Tellstick {
 	        }
 	        log.debug("in addDevice - last setDeviceParameter returned: "+ bparam);
 	 if(bname && bmodel && bproto && bparam){
-		 return TellstickLibrary.INSTANCE.TELLSTICK_SUCCESS;
+		 return TellstickLibrary.TELLSTICK_SUCCESS;
 	 }
 	 else {
 		 this.removeDevice(newId);
@@ -589,48 +757,52 @@ public class Tellstick {
 		return TellstickLibrary.INSTANCE.tdRemoveDevice(id);
 	}
 	
+	@Deprecated
 	public void listenRaw(long time){		
 		TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
 			
 		
 			public void apply(String data, int controllerId, int callbackId, Pointer context) {				
-				System.out.println(controllerId + " " + data);
+				log.info(controllerId + " " + data);
 			}
 		};
 		
-		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
+//		int callbackId = 
+		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
 		
 		try{
 			Thread.sleep(time);
 		}catch (Exception e){}
 	}
 	
+	@Deprecated
 	public void listenRaw(){		
 		TellstickLibrary.TDRawDeviceEvent rde = new TellstickLibrary.TDRawDeviceEvent() {
 			
 		
 			public void apply(String data, int controllerId, int callbackId, Pointer context) {	
 				DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
-			    System.out.println(df.format(Calendar.getInstance().getTime()) + "\tCtrl:" + controllerId + "\tData: " + data);
+			    log.info(df.format(Calendar.getInstance().getTime()) + "\tCtrl:" + controllerId + "\tData: " + data);
 				//System.out.println(controllerId + " " + data);
 			}
 		};
 		
-		int callbackId = TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
+//		int callbackId = 
+		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
 	}
 	
+	@Deprecated
 	public void listenDeviceEvents(long time){		
 		TellstickLibrary.TDDeviceEvent de = new TellstickLibrary.TDDeviceEvent() {
 			
-			
 			public void apply(int deviceId, int method, String data, int callbackId,Pointer context) {
-				
-				System.out.println("ID: " + deviceId + " - Name: " + getName(deviceId) + " - Cmd: " + cmdToString(method) + " - Data: " + data);
+				log.info("ID: " + deviceId + " - Name: " + getName(deviceId) + " - Cmd: " + cmdToString(method) + " - Data: " + data);
 				
 			}
 		};
 			
-		int callbackId = TellstickLibrary.INSTANCE.tdRegisterDeviceEvent(de, null);
+//		int callbackId = 
+		TellstickLibrary.INSTANCE.tdRegisterDeviceEvent(de, null);
 		
 		try{
 			Thread.sleep(time);
@@ -645,23 +817,23 @@ public class Tellstick {
 	
 	public String cmdToString(int cmd){
 		
-		if(cmd == TellstickLibrary.INSTANCE.TELLSTICK_TURNON){
+		if(cmd == TellstickLibrary.TELLSTICK_TURNON){
 			return "ON";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_TURNOFF){
+		} else if (cmd == TellstickLibrary.TELLSTICK_TURNOFF){
 			return "OFF";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_DIM){
+		} else if (cmd == TellstickLibrary.TELLSTICK_DIM){
 			return "DIM";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_BELL){
+		} else if (cmd == TellstickLibrary.TELLSTICK_BELL){
 			return "BELL";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_TOGGLE){
+		} else if (cmd == TellstickLibrary.TELLSTICK_TOGGLE){
 			return "TOGGLE";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_EXECUTE){
+		} else if (cmd == TellstickLibrary.TELLSTICK_EXECUTE){
 			return "EXECUTE";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_UP){
+		} else if (cmd == TellstickLibrary.TELLSTICK_UP){
 			return "UP";
-		}  else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_DOWN){
+		}  else if (cmd == TellstickLibrary.TELLSTICK_DOWN){
 			return "DOWN";
-		} else if (cmd == TellstickLibrary.INSTANCE.TELLSTICK_STOP){
+		} else if (cmd == TellstickLibrary.TELLSTICK_STOP){
 			return "STOP";
 		}
 		return "UNKNOWN COMMAND";
