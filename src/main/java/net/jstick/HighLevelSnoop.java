@@ -7,11 +7,11 @@ import java.util.Calendar;
 
 import net.jstick.api.Controller;
 import net.jstick.api.DeviceChangeEvent;
-import net.jstick.api.DeviceChangeEventListner;
+import net.jstick.api.DeviceChangeEventListener;
 import net.jstick.api.DeviceEvent;
-import net.jstick.api.DeviceEventListner;
+import net.jstick.api.DeviceEventListener;
 import net.jstick.api.SensorEvent;
-import net.jstick.api.SensorEventListner;
+import net.jstick.api.SensorEventListener;
 import net.jstick.api.Tellstick;
 import net.jstick.api.TellstickException;
 
@@ -19,9 +19,9 @@ public class HighLevelSnoop {
 
 	private Tellstick ts = new Tellstick();
 	
-	private DeviceEventListner deviceEventListner;
-	private DeviceChangeEventListner deviceChangeEventListner;
-	private SensorEventListner sensorEventListner;
+	private DeviceEventListener deviceEventListener;
+	private DeviceChangeEventListener deviceChangeEventListener;
+	private SensorEventListener sensorEventListener;
 	
 	
 	public static void main(String[] args) {
@@ -40,11 +40,11 @@ public class HighLevelSnoop {
 			 System.out.println("ID: " + c.getId() +  "\tName: " + c.getName() + "\tType: " + c.getTypeString() + "\tSerial: "  + c.getSerial() + "\n");
 		 }
 
-		 deviceEventListner = new DeviceEventListner() {
+		 deviceEventListener = new DeviceEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			 
 			@Override
-			public void eventRecived(DeviceEvent event) {
+			public void eventReceived(DeviceEvent event) {
 				System.out.println(df.format(Calendar.getInstance().getTime()) 
 						+ "\tDeviceEvent\tDevice:" + event.getDeviceId() 
 						+ "\tMethod: " + event.getMethod()
@@ -52,11 +52,11 @@ public class HighLevelSnoop {
 			}
 		};
 		
-		deviceChangeEventListner = new DeviceChangeEventListner() {
+		deviceChangeEventListener = new DeviceChangeEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			
 			@Override
-			public void eventRecived(DeviceChangeEvent event) {
+			public void eventReceived(DeviceChangeEvent event) {
 				System.out.println(df.format(Calendar.getInstance().getTime()) 
 						+ "\tDeviceChangeEvent\tDevice:" + event.getDeviceId() 
 						+ "\tChangeEvent: " + event.getChangeEvent()
@@ -65,11 +65,11 @@ public class HighLevelSnoop {
 			}
 		};
 		
-		sensorEventListner = new SensorEventListner() {
+		sensorEventListener = new SensorEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			
 			@Override
-			public void eventRecived(SensorEvent event) {
+			public void eventReceived(SensorEvent event) {
 				// String protocol, String model, int id, int dataType,
 				// String value, int timestamp
 				System.out.println(df.format(Calendar.getInstance().getTime()) 
@@ -84,9 +84,9 @@ public class HighLevelSnoop {
 			}
 		}; 
 
-		ts.addDeviceEventListners(deviceEventListner);
-		ts.addDeviceChangeEventListners(deviceChangeEventListner);
-		ts.addSensorEventListners(sensorEventListner);
+		ts.addDeviceEventListener(deviceEventListener);
+		ts.addDeviceChangeEventListener(deviceChangeEventListener);
+		ts.addSensorEventListener(sensorEventListener);
 			
 		// Do not exit, keep listening
 		while (true) {
@@ -104,17 +104,17 @@ public void attachShutDownHook(){
 	   public void run() {
 		   System.out.println("\n Closing connection to controller...");
 		   try {
-			   if ( deviceEventListner != null ) {
-				   ts.removeDeviceEventListners(deviceEventListner);
+			   if ( deviceEventListener != null ) {
+				   ts.removeDeviceEventListener(deviceEventListener);
 			   }
-			   if ( deviceChangeEventListner != null ) {
-				   ts.removeDeviceChangeEventListners(deviceChangeEventListner);
+			   if ( deviceChangeEventListener != null ) {
+				   ts.removeDeviceChangeEventListener(deviceChangeEventListener);
 			   }
-			   if ( sensorEventListner != null ) {
-				   ts.removeSensorEventListners(sensorEventListner);
+			   if ( sensorEventListener != null ) {
+				   ts.removeSensorEventListener(sensorEventListener);
 			   }
 		   } catch (TellstickException e ) {
-			   System.err.println("Error removing listners " + e.getErrorCode() + " : " + e.getMessage());
+			   System.err.println("Error removing listeners " + e.getErrorCode() + " : " + e.getMessage());
 		   }
 		   ts.close();
 	   }

@@ -7,7 +7,7 @@ import java.util.Calendar;
 
 import net.jstick.api.Controller;
 import net.jstick.api.RawEvent;
-import net.jstick.api.RawEventListner;
+import net.jstick.api.RawEventListener;
 import net.jstick.api.Tellstick;
 import net.jstick.api.TellstickException;
 
@@ -15,7 +15,7 @@ public class Snoop {
 
 	private Tellstick ts = new Tellstick();
 	
-	private RawEventListner rawEventListner;
+	private RawEventListener rawEventListener;
 	
 	
 	public static void main(String[] args) {
@@ -34,16 +34,16 @@ public class Snoop {
 			 System.out.println("ID: " + c.getId() +  "\tName: " + c.getName() + "\tType: " + c.getTypeString() + "\tSerial: "  + c.getSerial() + "\n");
 		 }
 
-		rawEventListner = new RawEventListner() {
+		rawEventListener = new RawEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 
 			@Override
-			public void eventRecived(RawEvent event) {
+			public void eventReceived(RawEvent event) {
 			    System.out.println(df.format(Calendar.getInstance().getTime()) + "\tCtrl:" + event.getControllerId() + "\tData: " + event.getData());
 			}
 		};
 		
-		ts.addRawEventListners(rawEventListner);
+		ts.addRawEventListener(rawEventListener);
 			
 		// Do not exit, keep listening
 		while (true) {
@@ -60,11 +60,11 @@ public void attachShutDownHook(){
 	   @Override
 	   public void run() {
 		   System.out.println("\n Closing connection to controller...");
-		   if ( rawEventListner != null ) {
+		   if ( rawEventListener != null ) {
 			   try {
-				ts.removeRawEventListners(rawEventListner);
+				ts.removeRawEventListener(rawEventListener);
 			} catch (TellstickException e) {
-				System.err.println("Error removing rawEventListner" + e.getErrorCode() + " : " + e.getMessage());
+				System.err.println("Error removing rawEventListener" + e.getErrorCode() + " : " + e.getMessage());
 			}
 		   }
 		   ts.close();
