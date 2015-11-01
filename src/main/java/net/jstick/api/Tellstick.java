@@ -18,7 +18,7 @@ import com.sun.jna.Pointer;
 
 
 public class Tellstick {
-	private static String version = "1.4";
+	private static String version = "1.6";
 	static Log log = LogFactory.getLog(Tellstick.class.getName());
 	boolean debug = false;
 
@@ -462,8 +462,6 @@ public class Tellstick {
 				avail = "DISCONNECTED";
 			}
 			
-			//log.info(cavail[0]);
-			
 			Controller ctrl = new Controller(cid[0],ctype[0],name,serial,firmware,avail);
 			ctrls.add(ctrl);
 				
@@ -609,7 +607,12 @@ public class Tellstick {
 				 }
 					
 				 if (TellstickLibrary.INSTANCE.tdSensorValue(Native.toString(pro), Native.toString(mod), sid[0], TellstickLibrary.TELLSTICK_HUMIDITY, value, 10, time) == TellstickLibrary.TELLSTICK_SUCCESS){
-					 hum = Integer.parseInt(Native.toString(value));
+					 // Correct for mandolyn bug
+					 if(value == null){
+						 hum = 0;
+					 } else {
+						 hum = Integer.parseInt(Native.toString(value));
+					 }
 					 value=null;
 				 }
 				 
@@ -664,9 +667,7 @@ public class Tellstick {
 	
 	public boolean setDeviceParameter(int id, String name, String value){
 		return TellstickLibrary.INSTANCE.tdSetDeviceParameter(id, name, value);
-	}
-	
-	
+	}	
 	 
 	 public int addDevice(DeviceConfig cfgDev){
 		 int newId = TellstickLibrary.INSTANCE.tdAddDevice();
@@ -703,7 +704,6 @@ public class Tellstick {
 	
 	@Deprecated
 	public void listenRaw(long time){			
-		/// int callbackId = 
 		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(new RawDeviceEvent(), null);
 		try{
 			Thread.sleep(time);
@@ -715,7 +715,6 @@ public class Tellstick {
 	@Deprecated
 	public RawDeviceEvent listenRaw(){
 		RawDeviceEvent rde = new RawDeviceEvent();			
-		// int callbackId = 
 		TellstickLibrary.INSTANCE.tdRegisterRawDeviceEvent(rde, null);
 		return rde;
 	}
@@ -730,7 +729,6 @@ public class Tellstick {
 			}
 		};
 			
-//		int callbackId = 
 		TellstickLibrary.INSTANCE.tdRegisterDeviceEvent(de, null);
 		
 		try{
@@ -740,7 +738,6 @@ public class Tellstick {
 	
 	public int getSupportedMethods(int id){	
 		int supported = TellstickLibrary.INSTANCE.tdMethods(id, methods);
-		//log.info(supported);
 		return supported;
 	}
 	
@@ -788,7 +785,7 @@ public class Tellstick {
 		
 		deviceChangeEvent = new TellstickLibrary.TDDeviceChangeEvent() {
 			
-			@Override
+			//@Override
 			public void apply(int deviceId, int changeEvent,
 					int changeType, int callbackId, Pointer context) {
 				DeviceChangeEvent event = new DeviceChangeEvent(deviceId, changeEvent, changeType);

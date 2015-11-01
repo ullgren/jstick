@@ -37,7 +37,7 @@ public class Snoop {
 		rawEventListener = new RawEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 
-			@Override
+			//@Override
 			public void eventReceived(RawEvent event) {
 			    System.out.println(df.format(Calendar.getInstance().getTime()) + "\tCtrl:" + event.getControllerId() + "\tData: " + event.getData());
 			}

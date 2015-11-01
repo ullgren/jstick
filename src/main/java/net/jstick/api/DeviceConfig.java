@@ -93,27 +93,4 @@ public class DeviceConfig {
 	}
 	
 	
-
 }
-
-
-
-
-/*
-device {
-	  id = 6
-	  name = "Office W"
-	  controller = 0
-	  protocol = "arctech"
-	  model = "selflearning-switch"
-	  parameters {
-	    # devices = ""
-	    house = "1"
-	    unit = "6"
-	    # code = ""
-	    # system = ""
-	    # units = ""
-	    # fade = ""
-	  }
-	}
-*/

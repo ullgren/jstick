@@ -43,7 +43,7 @@ public class HighLevelSnoop {
 		 deviceEventListener = new DeviceEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			 
-			@Override
+			//@Override
 			public void eventReceived(DeviceEvent event) {
 				System.out.println(df.format(Calendar.getInstance().getTime()) 
 						+ "\tDeviceEvent\tDevice:" + event.getDeviceId() 
@@ -55,7 +55,7 @@ public class HighLevelSnoop {
 		deviceChangeEventListener = new DeviceChangeEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			
-			@Override
+			//@Override
 			public void eventReceived(DeviceChangeEvent event) {
 				System.out.println(df.format(Calendar.getInstance().getTime()) 
 						+ "\tDeviceChangeEvent\tDevice:" + event.getDeviceId() 
@@ -68,7 +68,7 @@ public class HighLevelSnoop {
 		sensorEventListener = new SensorEventListener() {
 			DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 			
-			@Override
+			//@Override
 			public void eventReceived(SensorEvent event) {
 				// String protocol, String model, int id, int dataType,
 				// String value, int timestamp
